@@ -30,8 +30,12 @@ app.post('/upload', storage, async function(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'application/json');  // Create return content type (json)
 
-    // var tmpFile = req.file.filename;
-    var tmpFile = req.file.filename;
+    try {
+        var tmpFile = req.file.filename;
+    } catch (error) {
+        res.end(JSON.stringify({ status: 404 }));
+        return;
+    }
     const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweEU3ZGMxZjdGMDlDNjJGZTk4NkMzODkzRDMzMGIwOTVFMjA1ZTJlYTUiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2MzY4OTAxOTU5NTMsIm5hbWUiOiJNZWRpQ2hhaW4ifQ.rJiWMj-t6wRHHd3nez5DB6VuNNbgYjGvbPM2tclv0lg';
 
     const storage = new Web3Storage({ token });
