@@ -3,7 +3,13 @@ import path from 'path';
 import multer from 'multer';    // Temporary store files on localdisk (so we can extract from user and upload to IPFS)
 import { unlink } from 'fs/promises';   // Delete temporary files
 import { Web3Storage, getFilesFromPath } from 'web3.storage';
+// import Web3 from "web3";
+import fs from "fs";
+import solc from "solc";
+// import { contractABI } from "./asset/contractABI.js";
+// import { Contract, DeployOptions } from "web3-eth-contract"; // Might be useful if using ts
 
+// const web3 = new Web3("https://alfajores-forno.celo-testnet.org");
 const app = Express();
 var storage = multer({
     storage: multer.diskStorage({
@@ -54,6 +60,54 @@ app.post('/upload', storage, async function(req, res) {
     res.end(JSON.stringify({ cid: cid }));
 });
 
+app.get('/deploy', storage, async function(req, res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'application/json');  // Create return content type (json)
+
+    let compiled = compileSols(["Contract"]);
+    console.log(compiled);
+
+    res.end(JSON.stringify({ contract: compiled }));
+});
+
 app.listen(port, () => {
     console.log(`web3 app listening at http://localhost:${port}`)
 })
+
+
+function findImports(importPath) {
+    try {
+        return {
+            contents: fs.readFileSync(`smart_contracts/${importPath}`, "utf8")
+        };
+    } catch (e) {
+        return { error: e.message };
+    }
+}
+
+function compileSols(solNames) {
+    let sources = {};
+    solNames.forEach((value, index, array) => {
+        let sol_file = fs.readFileSync(`smart_contracts/${value}.sol`, "utf8");
+        sources[value] = {
+            content: sol_file
+        };
+    });
+    let input = {
+        language: "Solidity",
+        sources: sources,
+        settings: {
+            outputSelection: {
+                "*": {
+                    "*": ["*"]
+                }
+            }
+        }
+    };
+    let compiler_output = solc.compile(
+        JSON.stringify(input), 
+        { import: findImports }
+    );
+    let output = JSON.parse(compiler_output);
+    return output;
+}
